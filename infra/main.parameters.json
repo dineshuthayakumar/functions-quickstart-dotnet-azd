@@ -8,6 +8,9 @@
     "location": {
       "value": "${AZURE_LOCATION}"
     },
+    "resourceGroupLocation": {
+      "value": "${AZURE_RESOURCE_GROUP_LOCATION}"
+    },
     "principalId": {
       "value": "${AZURE_PRINCIPAL_ID}"
     },
@@ -16,6 +19,9 @@
     },
     "apiPublicNetworkAccess": {
       "value": "${API_PUBLIC_NETWORK_ACCESS}"
+    },
+    "apiServiceTag": {
+      "value": "${API_SERVICE_TAG}"
     },
     "resourceGroupName": {
       "value": "${AZURE_RESOURCE_GROUP}"

@@ -25,7 +25,7 @@ var tablePrivateDNSZoneName = 'privatelink.table.${environment().suffixes.storag
 module blobPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.11.0' = if (enableBlob) {
   name: 'blob-private-endpoint-deployment'
   params: {
-    name: 'blob-private-endpoint'
+    name: 'pep-blob-${resourceName}'
     location: location
     tags: tags
     subnetResourceId: '${vnet.id}/subnets/${subnetName}'
@@ -58,7 +58,7 @@ module blobPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.11.0' =
 module queuePrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.11.0' = if (enableQueue) {
   name: 'queue-private-endpoint-deployment'
   params: {
-    name: 'queue-private-endpoint'
+    name: 'pep-queue-${resourceName}'
     location: location
     tags: tags
     subnetResourceId: '${vnet.id}/subnets/${subnetName}'
@@ -91,7 +91,7 @@ module queuePrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.11.0' 
 module tablePrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.11.0' = if (enableTable) {
   name: 'table-private-endpoint-deployment'
   params: {
-    name: 'table-private-endpoint'
+    name: 'pep-table-${resourceName}'
     location: location
     tags: tags
     subnetResourceId: '${vnet.id}/subnets/${subnetName}'

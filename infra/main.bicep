@@ -48,6 +48,8 @@ param environmentName string
 })
 param location string
 param vnetEnabled bool
+@description('Location of the existing resource group, when it differs from the location resources are deployed into. Leave empty when they match.')
+param resourceGroupLocation string = ''
 @description('Controls public network access on the Function App independently of vnetEnabled, so it can be temporarily re-enabled for code deployment.')
 @allowed(['Enabled', 'Disabled'])
 param apiPublicNetworkAccess string = 'Disabled'
@@ -71,11 +73,13 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 var tags = { 'azd-env-name': environmentName }
 var functionAppName = !empty(apiServiceName) ? apiServiceName : '${abbrs.webSitesFunctions}api-${resourceToken}'
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, resourceToken)), 7)}'
+@description('The azd-service-name tag value for the Function App. Must be unique within the resource group when sharing an RG across multiple azd environments.')
+param apiServiceTag string = 'api'
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: !empty(resourceGroupName) ? resourceGroupName : '${abbrs.resourcesResourceGroups}${environmentName}'
-  location: location
+  location: !empty(resourceGroupLocation) ? resourceGroupLocation : location
   tags: tags
 }
 
@@ -114,6 +118,7 @@ module api './app/api.bicep' = {
     name: functionAppName
     location: location
     tags: tags
+    serviceName: !empty(apiServiceTag) ? apiServiceTag : 'api'
     applicationInsightsName: monitoring.outputs.name
     appServicePlanId: appServicePlan.outputs.resourceId
     runtimeName: 'dotnet-isolated'

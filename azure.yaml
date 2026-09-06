@@ -8,3 +8,7 @@ services:
     project: ./http/
     language: dotnet
     host: function
+  api-south:
+    project: ./http/
+    language: dotnet
+    host: function
