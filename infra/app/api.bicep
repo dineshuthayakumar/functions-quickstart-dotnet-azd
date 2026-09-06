@@ -11,6 +11,9 @@ param serviceName string = 'api'
 param storageAccountName string
 param deploymentStorageContainerName string
 param virtualNetworkSubnetId string = ''
+@description('Set to Disabled to make the function app inaccessible over the public internet (requires a private endpoint for inbound access).')
+@allowed(['Enabled', 'Disabled'])
+param publicNetworkAccess string = 'Enabled'
 param instanceMemoryMB int = 2048
 param maximumInstanceCount int = 100
 param identityId string = ''
@@ -100,6 +103,7 @@ module api 'br/public:avm/res/web/site:0.15.1' = {
       alwaysOn: false
     }
     virtualNetworkSubnetId: !empty(virtualNetworkSubnetId) ? virtualNetworkSubnetId : null
+    publicNetworkAccess: publicNetworkAccess
     appSettingsKeyValuePairs: allAppSettings
   }
 }

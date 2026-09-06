@@ -48,6 +48,9 @@ param environmentName string
 })
 param location string
 param vnetEnabled bool
+@description('Controls public network access on the Function App independently of vnetEnabled, so it can be temporarily re-enabled for code deployment.')
+@allowed(['Enabled', 'Disabled'])
+param apiPublicNetworkAccess string = 'Disabled'
 param apiServiceName string = ''
 param apiUserAssignedIdentityName string = ''
 param applicationInsightsName string = ''
@@ -56,6 +59,10 @@ param logAnalyticsName string = ''
 param resourceGroupName string = ''
 param storageAccountName string = ''
 param vNetName string = ''
+@description('Address prefix for the Function App VNet-integration subnet. Leave empty to use the vnet module default (10.10.2.0/24).')
+param vnetAppSubnetAddressPrefix string = ''
+@description('Address prefix for the private endpoints subnet. Leave empty to use the vnet module default (10.10.3.0/24).')
+param vnetPeSubnetAddressPrefix string = ''
 @description('Id of the user identity to be used for testing and debugging. This is not required in production. Leave empty if not needed.')
 param principalId string = deployer().objectId
 
@@ -121,6 +128,7 @@ module api './app/api.bicep' = {
     appSettings: {
     }
     virtualNetworkSubnetId: vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
+    publicNetworkAccess: apiPublicNetworkAccess
   }
 }
 
@@ -180,9 +188,9 @@ module serviceVirtualNetwork 'app/vnet.bicep' =  if (vnetEnabled) {
   name: 'serviceVirtualNetwork'
   scope: rg
   params: {
-    location: location
-    tags: tags
     vNetName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    appSubnetAddressPrefix: !empty(vnetAppSubnetAddressPrefix) ? vnetAppSubnetAddressPrefix : '10.10.2.0/24'
+    peSubnetAddressPrefix: !empty(vnetPeSubnetAddressPrefix) ? vnetPeSubnetAddressPrefix : '10.10.3.0/24'
   }
 }
 
@@ -198,6 +206,19 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
     enableBlob: storageEndpointConfig.enableBlob
     enableQueue: storageEndpointConfig.enableQueue
     enableTable: storageEndpointConfig.enableTable
+  }
+}
+
+// Private endpoint for the Function App itself, required for inbound access since publicNetworkAccess is disabled
+module apiPrivateEndpoint 'app/api-PrivateEndpoint.bicep' = if (vnetEnabled) {
+  name: 'apiPrivateEndpoint'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    virtualNetworkName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    subnetName: vnetEnabled ? serviceVirtualNetwork.outputs.peSubnetName : ''
+    resourceName: api.outputs.SERVICE_API_NAME
   }
 }
 

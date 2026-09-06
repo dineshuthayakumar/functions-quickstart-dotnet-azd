@@ -1,48 +1,59 @@
-@description('Specifies the name of the virtual network.')
+@description('Specifies the name of an existing virtual network to integrate with.')
 param vNetName string
 
-@description('Specifies the location.')
-param location string = resourceGroup().location
+@description('Specifies the name of the subnet for the Function App private endpoint.')
+param peSubnetName string = 'snet-private-endpoints'
 
-@description('Specifies the name of the subnet for the Service Bus private endpoint.')
-param peSubnetName string = 'private-endpoints-subnet'
+@description('Specifies the address prefix for the private endpoint subnet. Must not overlap with existing subnets in the VNet.')
+param peSubnetAddressPrefix string = '10.10.3.0/24'
 
 @description('Specifies the name of the subnet for Function App virtual network integration.')
-param appSubnetName string = 'app'
+param appSubnetName string = 'snet-func-app'
 
-param tags object = {}
+@description('Specifies the address prefix for the Function App subnet. Must not overlap with existing subnets in the VNet.')
+param appSubnetAddressPrefix string = '10.10.2.0/24'
 
-// Migrated to use AVM module instead of direct resource declaration
-module virtualNetwork 'br/public:avm/res/network/virtual-network:0.6.1' = {
-  name: 'vnet-deployment'
-  params: {
-    // Required parameters
-    name: vNetName
-    addressPrefixes: [
-      '10.0.0.0/16'
-    ]
-    // Non-required parameters
-    location: location
-    tags: tags
-    subnets: [
-      {
-        name: peSubnetName
-        addressPrefix: '10.0.1.0/24'
-        privateEndpointNetworkPolicies: 'Disabled'
-        privateLinkServiceNetworkPolicies: 'Enabled'
-      }
-      {
-        name: appSubnetName
-        addressPrefix: '10.0.2.0/24'
-        privateEndpointNetworkPolicies: 'Disabled'
-        privateLinkServiceNetworkPolicies: 'Enabled'
-        delegation: 'Microsoft.App/environments'
-      }
-    ]
+// Reference the existing (shared) virtual network - do NOT redeclare its address space/subnets,
+// as that would replace the whole subnets collection and remove pre-existing subnets.
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = {
+  name: vNetName
+}
+
+// Additive subnet for the storage account private endpoint (inbound)
+resource peSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
+  parent: vnet
+  name: peSubnetName
+  properties: {
+    addressPrefix: peSubnetAddressPrefix
+    privateEndpointNetworkPolicies: 'Disabled'
+    privateLinkServiceNetworkPolicies: 'Enabled'
   }
 }
 
+// Additive subnet for Function App VNet integration (outbound), delegated per Flex Consumption requirements
+resource appSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
+  parent: vnet
+  name: appSubnetName
+  properties: {
+    addressPrefix: appSubnetAddressPrefix
+    privateEndpointNetworkPolicies: 'Disabled'
+    privateLinkServiceNetworkPolicies: 'Enabled'
+    delegations: [
+      {
+        name: 'delegation'
+        properties: {
+          serviceName: 'Microsoft.App/environments'
+        }
+      }
+    ]
+  }
+  dependsOn: [
+    peSubnet // serialize subnet writes to avoid concurrent-PUT conflicts on the same VNet
+  ]
+}
+
+output vnetId string = vnet.id
 output peSubnetName string = peSubnetName
-output peSubnetID string = '${virtualNetwork.outputs.resourceId}/subnets/${peSubnetName}'
+output peSubnetID string = peSubnet.id
 output appSubnetName string = appSubnetName
-output appSubnetID string = '${virtualNetwork.outputs.resourceId}/subnets/${appSubnetName}'
+output appSubnetID string = appSubnet.id

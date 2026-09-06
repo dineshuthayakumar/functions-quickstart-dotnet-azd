@@ -21,7 +21,7 @@ namespace Company.Function
         {
             var returnValue = string.IsNullOrEmpty(name)
                 ? "Hello, World."
-                : $"Hello, {name}.";
+                : $"Hello, {name} at {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
  
             _logger.LogInformation($"C# HTTP trigger function processed a request for {returnValue}.");
  

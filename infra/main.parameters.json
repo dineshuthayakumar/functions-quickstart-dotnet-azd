@@ -13,6 +13,21 @@
     },
     "vnetEnabled": {
       "value": "${VNET_ENABLED}"
+    },
+    "apiPublicNetworkAccess": {
+      "value": "${API_PUBLIC_NETWORK_ACCESS}"
+    },
+    "resourceGroupName": {
+      "value": "${AZURE_RESOURCE_GROUP}"
+    },
+    "vNetName": {
+      "value": "${AZURE_VNET_NAME}"
+    },
+    "vnetAppSubnetAddressPrefix": {
+      "value": "${VNET_APP_SUBNET_PREFIX}"
+    },
+    "vnetPeSubnetAddressPrefix": {
+      "value": "${VNET_PE_SUBNET_PREFIX}"
     }
   }
 }
